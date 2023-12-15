@@ -47,16 +47,20 @@ const tempWatchedData = [
   },
 ];
 
-/* 
-  1. 在状态所在的地方直接使用组件，可以解决 Props Drilling 的问题
-*/
-
 const average = arr =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
+const KEY = 'a8fc418f';
+
 export default function App() {
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
+  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState([]);
+
+  fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=Interstellar`)
+    .then(res => res.json())
+    .then(data => setMovies(data.Search));
+
+  setWatched([]);
 
   return (
     <>
