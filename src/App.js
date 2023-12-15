@@ -48,44 +48,41 @@ const tempWatchedData = [
 ];
 
 /* 
-  创建组件的四个标准：
-    1. Logical separation
-    2. Reusability
-    3. Responsibilites and Complexity
-    4. Personal coding style
+  - Components categorized into structural, presentational, stateful, and stateless types.
+  - Structural components (`App`, `NavBar`, `Main`): Responsible for layout and structure.
+  - Presentational components (`Logo`, `NumResults`, `Movie`, `WatchedMoviesList`, `WatchedMovie`): Stateless, display content.
+  - Stateful components (`Search`, `ListBox`, `MovieList`, `WatchedBox`): Hold and manage state.
 
-  如果组件中包含了大量的 state，这表示该组件承担了太多的职责，在 App 组件初始时拥有 5 个状态变量（piece of state）
-  和 3 个派生状态（derived state），因此我们需要对 App 组件进行拆分：
-  1. 根据逻辑分离的标准，将 App 组件拆分为 NavBar 和 Main 组件，因为 NavBar 和 Main 组件在内容上是不相关的
+  Current issue: Not dynamically calculating the number of results displayed. State needed in NumResults, resides in MovieList
+  Solution: Lift state up to the closest parent component (App).
+  Prop drilling: Passing props through multiple nested child components to reach deeply nested ones.
+    Pass `movies` prop through the tree: App -> Main -> ListBox -> MovieList
+    
+    Prop drilling involves passing props not needed by intermediate components
+    It can become cumbersome and difficult to manage in a deeply nested component tree
+    Complicates the passing of data through unnecessary layers
 */
 
 const average = arr =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 export default function App() {
+  const [movies, setMovies] = useState(tempMovieData);
+
   return (
     <>
-      <NavBar />
-      <Main />
+      <NavBar movies={movies} />
+      <Main movies={movies} />
     </>
   );
 }
 
-/* 
-  拆分后的 NavBar 并不能一眼就看出它在干什么，它内部的功能，而且如果我们想要重用其中的一些部分，
-  比如搜索框，我们需要将其从 NavBar 组件中拆分出来，创建 Search 组件
-
-  在拆分出 Search 组件后，我们发现 Search 组件夹在 JSX 中，前面神 div，后面是 p，这样真的很影响代码的美观性
-  所以我们也要将 Logo 和 NumResults 拆分出来，创建 Logo 和 NumResults 组件
-
-  拆分后的 NavBar 可以一眼就清晰的看出它包含了 Logo, Search, NumResults 三个部分，而且每个组件都是方便重用的
-*/
-function NavBar() {
+function NavBar({ movies }) {
   return (
     <nav className="nav-bar">
       <Logo />
       <Search />
-      <NumResults />
+      <NumResults movies={movies} />
     </nav>
   );
 }
@@ -110,34 +107,24 @@ function Search() {
   />;
 }
 
-function NumResults() {
+function NumResults({ movies }) {
   return (
     <p className="num-results">
-      Found <strong>X</strong> results
+      Found <strong>{movies.length}</strong> results
     </p>
   );
 }
 
-/* 
-  根据第一条标准：逻辑分离，Main 组件现在的内容/逻辑关系非常不清晰，我们要将其拆分为两个组件：ListBox 和 WatchedBox
-  但是我们还要对 ListBox 和 WatchedBox 进行拆分，因为 ListBox 和 WatchedBox 中的内容/逻辑关系也不清晰，不符合单一职责原则
-
-  注意我们是如何拆分 ListBox 的，我们将 MovieList 从 ListBox 中拆分出来，然后再在 MovieList 中拆分出一个 Movie 组件
-  这是一种常见的做法，通常是使用 map 去生成一个列表，列表中的每个元素都是一个组件，这样是非常清晰明了的
-
-  然后按照同样的方法继续拆分 WatchedBox，将 WatchedSummary 和 WatchedMovieList 从 WatchedBox 中拆分出来
-*/
-
-function Main() {
+function Main({ movies }) {
   return (
     <main className="main">
-      <ListBox />
+      <ListBox movies={movies} />
       <WatchedBox />
     </main>
   );
 }
 
-function ListBox() {
+function ListBox({ movies }) {
   const [isOpen1, setIsOpen1] = useState(true);
 
   return (
@@ -145,14 +132,12 @@ function ListBox() {
       <button className="btn-toggle" onClick={() => setIsOpen1(open => !open)}>
         {isOpen1 ? '–' : '+'}
       </button>
-      {isOpen1 && <MovieList />}
+      {isOpen1 && <MovieList movies={movies} />}
     </div>
   );
 }
 
-function MovieList() {
-  const [movies, setMovies] = useState(tempMovieData);
-
+function MovieList({ movies }) {
   return (
     <ul className="list">
       {movies?.map(movie => (
