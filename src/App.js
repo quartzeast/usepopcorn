@@ -48,19 +48,7 @@ const tempWatchedData = [
 ];
 
 /* 
-  - Components categorized into structural, presentational, stateful, and stateless types.
-  - Structural components (`App`, `NavBar`, `Main`): Responsible for layout and structure.
-  - Presentational components (`Logo`, `NumResults`, `Movie`, `WatchedMoviesList`, `WatchedMovie`): Stateless, display content.
-  - Stateful components (`Search`, `ListBox`, `MovieList`, `WatchedBox`): Hold and manage state.
-
-  Current issue: Not dynamically calculating the number of results displayed. State needed in NumResults, resides in MovieList
-  Solution: Lift state up to the closest parent component (App).
-  Prop drilling: Passing props through multiple nested child components to reach deeply nested ones.
-    Pass `movies` prop through the tree: App -> Main -> ListBox -> MovieList
-    
-    Prop drilling involves passing props not needed by intermediate components
-    It can become cumbersome and difficult to manage in a deeply nested component tree
-    Complicates the passing of data through unnecessary layers
+  1. 在状态所在的地方直接使用组件，可以解决 Props Drilling 的问题
 */
 
 const average = arr =>
@@ -71,18 +59,25 @@ export default function App() {
 
   return (
     <>
-      <NavBar movies={movies} />
-      <Main movies={movies} />
+      <NavBar>
+        <Search />
+        <NumResults movies={movies} />
+      </NavBar>
+      <Main>
+        <ListBox>
+          <MovieList movies={movies} />
+        </ListBox>
+        <WatchedBox />
+      </Main>
     </>
   );
 }
 
-function NavBar({ movies }) {
+function NavBar({ children }) {
   return (
     <nav className="nav-bar">
       <Logo />
-      <Search />
-      <NumResults movies={movies} />
+      {children}
     </nav>
   );
 }
@@ -115,16 +110,11 @@ function NumResults({ movies }) {
   );
 }
 
-function Main({ movies }) {
-  return (
-    <main className="main">
-      <ListBox movies={movies} />
-      <WatchedBox />
-    </main>
-  );
+function Main({ children }) {
+  return <main className="main">{children}</main>;
 }
 
-function ListBox({ movies }) {
+function ListBox({ children }) {
   const [isOpen1, setIsOpen1] = useState(true);
 
   return (
@@ -132,7 +122,7 @@ function ListBox({ movies }) {
       <button className="btn-toggle" onClick={() => setIsOpen1(open => !open)}>
         {isOpen1 ? '–' : '+'}
       </button>
-      {isOpen1 && <MovieList movies={movies} />}
+      {isOpen1 && children}
     </div>
   );
 }
