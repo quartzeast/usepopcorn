@@ -56,19 +56,32 @@ export default function App() {
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const query = 'Interstellar';
 
   useEffect(function () {
     async function fetchMovies() {
-      setIsLoading(true);
-      const res = await fetch(
-        `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
-      );
-      const data = await res.json();
-      setMovies(data.Search);
-      // console.log(movies); // [] stale state
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
+        const res = await fetch(
+          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+        );
+
+        if (!res.ok)
+          throw new Error('Something went wrong with fetching movies');
+
+        const data = await res.json();
+        if (data.Response === 'False') throw new Error('Movie not Found');
+
+        setMovies(data.Search);
+        // console.log(movies); // [] stale state
+      } catch (err) {
+        console.error(err.message);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     fetchMovies();
@@ -81,7 +94,14 @@ export default function App() {
         <NumResults movies={movies} />
       </NavBar>
       <Main>
-        <Box>{isLoading ? <Loader /> : <MovieList movies={movies} />}</Box>
+        <Box>
+          {/* {isLoading ? <Loader /> : <MovieList movies={movies} />} */}
+          {isLoading && <Loader />}
+          {!isLoading && !error && <MovieList movies={movies} />}
+
+          {error && <ErrorMessage message={error} />}
+        </Box>
+
         <Box>
           <WatchedSummary watched={watched} />
           <WatchedMovieList watched={watched} />
@@ -93,6 +113,14 @@ export default function App() {
 
 function Loader() {
   return <p className="loader">Loading</p>;
+}
+
+function ErrorMessage({ message }) {
+  return (
+    <p className="error">
+      <span>🚫</span> {message}
+    </p>
+  );
 }
 
 function NavBar({ children }) {
@@ -125,6 +153,7 @@ function Search() {
 }
 
 function NumResults({ movies }) {
+  console.log('🚀 ~ file: App.js:153 ~ NumResults ~ movies:', movies);
   return (
     <p className="num-results">
       Found <strong>{movies.length}</strong> results
@@ -150,6 +179,7 @@ function Box({ children }) {
 }
 
 function MovieList({ movies }) {
+  console.log('🚀 ~ file: App.js:178 ~ MovieList ~ movies:', movies);
   return (
     <ul className="list">
       {movies?.map(movie => (
